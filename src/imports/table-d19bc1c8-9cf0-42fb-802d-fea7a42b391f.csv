@@ -1,0 +1,10 @@
+#,Pantalla,Descripción
+1,Dashboard del Asesor,"KPIs, gráficas, actividad reciente, accesos rápidos"
+2,Portafolio Público (Mobile),"Lo que ve el cliente: propiedades, filtros, botones de WhatsApp y Reservar"
+3,CRM Kanban,Pipeline de ventas con columnas y tarjetas de leads arrastrables
+4,Panel de Propiedades,"Grid admin con tarjetas, badges de estado, métricas y acciones"
+5,Formulario Nueva Propiedad,Uploader de 4 fotos con stepper de 4 pasos
+6,Branding / Personalización,"Editor de colores, logo, template con vista previa en vivo"
+7,Agenda de Visitas,Calendario semanal con reservas y panel de disponibilidad
+8,Generador de QR Codes,QR del portafolio + QR por propiedad + preview del cartel PDF
+9,Analíticas,"KPIs, gráficas de tráfico, embudo de conversión, top propiedades"
