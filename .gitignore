@@ -1,2 +1,12 @@
-# Build artifacts
+# Dependencias
+node_modules/
+
+# Artefactos de build
 dist/
+
+# Entorno y miscelánea
+.env
+.env.*
+*.local
+.DS_Store
+Thumbs.db
