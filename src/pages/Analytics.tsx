@@ -98,7 +98,7 @@ export default function Analytics() {
               <YAxis hide />
               <Tooltip
                 contentStyle={{ border: "none", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
-                formatter={(v: number) => [`${v} visitas`, ""]}
+                formatter={(v) => [`${Number(v)} visitas`, ""]}
               />
               <Area type="monotone" dataKey="visits" stroke="#1E88E5" strokeWidth={2} fill="url(#visitsGrad)" dot={false} />
             </AreaChart>
@@ -112,7 +112,7 @@ export default function Analytics() {
               <Pie data={ORIGIN_DATA} cx="50%" cy="50%" innerRadius={48} outerRadius={70} paddingAngle={2} dataKey="value">
                 {ORIGIN_DATA.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
-              <Tooltip contentStyle={{ border: "none", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [`${v}%`, ""]} />
+              <Tooltip contentStyle={{ border: "none", borderRadius: 8, fontSize: 12 }} formatter={(v) => [`${Number(v)}%`, ""]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1.5 mt-1">

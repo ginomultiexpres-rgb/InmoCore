@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { Reveal, ProgressBar } from "../components/ui";
 
 const PROPERTIES = [
   { id: 1, name: "Depa Miraflores", price: "S/ 950,000", beds: 2, baths: 2, sqm: 85, status: "Activa", views: 120, wa: 8, img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&h=400&fit=crop&auto=format" },
@@ -10,7 +11,14 @@ const PROPERTIES = [
   { id: 6, name: "Depa San Borja", price: "S/ 1,100,000", beds: 2, baths: 2, sqm: 95, status: "Reservada", views: 45, wa: 7, img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=400&fit=crop&auto=format" },
 ];
 
-const FILTERS = ["Todas", "Activas", "Reservadas", "Vendidas"];
+// El filtro en plural se compara con el singular quitando la "s" final.
+const FILTER_TO_STATUS: Record<string, string | null> = {
+  Todas: null,
+  Activas: "Activa",
+  Reservadas: "Reservada",
+  Vendidas: "Vendida",
+};
+const FILTERS = Object.keys(FILTER_TO_STATUS);
 
 const statusStyle: Record<string, string> = {
   Activa: "bg-[#4CAF50] text-white",
@@ -22,8 +30,12 @@ export default function Properties() {
   const [filter, setFilter] = useState("Todas");
   const [search, setSearch] = useState("");
 
+  // Contador dinámico: el texto "X de Y" ya no queda desincronizado con los datos.
+  const activas = PROPERTIES.filter((p) => p.status === "Activa").length;
+
   const filtered = PROPERTIES.filter((p) => {
-    const matchFilter = filter === "Todas" || p.status + "s" === filter || p.status === filter.slice(0, -1);
+    const expected = FILTER_TO_STATUS[filter];
+    const matchFilter = expected === null || p.status === expected;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
@@ -35,15 +47,13 @@ export default function Properties() {
         <div>
           <h1 className="text-[24px] font-semibold text-[#212121]">Mis Propiedades</h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[13px] text-[#757575]">15 de 20</span>
-            <div className="w-32 h-1.5 bg-[#E0E0E0] rounded-full overflow-hidden">
-              <div className="h-full bg-[#1E88E5] rounded-full" style={{ width: "75%" }} />
-            </div>
+            <span className="text-[13px] text-[#757575]">{activas} activas · {PROPERTIES.length} publicadas</span>
+            <ProgressBar pct={(activas / PROPERTIES.length) * 100} className="w-32" />
           </div>
         </div>
         <Link
           to="/properties/new"
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#1E88E5] text-white text-[14px] font-medium rounded-lg hover:bg-[#1565C0] transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#1E88E5] text-white text-[14px] font-medium rounded-lg hover:bg-[#1565C0] hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
           <span className="text-lg leading-none">+</span> Nueva Propiedad
         </Link>
@@ -56,9 +66,9 @@ export default function Properties() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-all duration-200 active:scale-95 ${
                 filter === f
-                  ? "bg-[#1E88E5] text-white border-[#1E88E5]"
+                  ? "bg-[#1E88E5] text-white border-[#1E88E5] shadow-sm"
                   : "bg-white text-[#757575] border-[#E0E0E0] hover:border-[#1E88E5] hover:text-[#1E88E5]"
               }`}
             >
@@ -75,27 +85,37 @@ export default function Properties() {
             placeholder="Buscar por dirección o título..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 text-[13px] bg-white border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] w-64 transition-colors"
+            className="pl-9 pr-4 py-2 text-[13px] bg-white border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] w-64 transition-all"
           />
         </div>
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filtered.map((p) => (
-          <PropertyCard key={p.id} property={p} />
-        ))}
-      </div>
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 animate-fade-in">
+          <p className="text-[40px] mb-2">🔍</p>
+          <p className="text-[15px] font-medium text-[#212121]">Sin resultados</p>
+          <p className="text-[13px] text-[#757575] mt-1">Prueba con otro filtro o término de búsqueda.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filtered.map((p, i) => (
+            <Reveal key={p.id} delay={i * 70}>
+              <PropertyCard property={p} />
+            </Reveal>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function PropertyCard({ property: p }: { property: typeof PROPERTIES[0] }) {
   return (
-    <div className="bg-white rounded-[12px] overflow-hidden hover:shadow-md transition-shadow" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
-      <div className="relative">
-        <img src={p.img} alt={p.name} className="w-full h-44 object-cover" />
-        <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[12px] font-semibold ${statusStyle[p.status]}`}>
+    <div className="bg-white rounded-[12px] overflow-hidden shadow-card hover:shadow-elevated hover:-translate-y-1 transition-all duration-300 group h-full">
+      <div className="relative overflow-hidden">
+        <img src={p.img} alt={p.name} loading="lazy" className="w-full h-44 object-cover group-hover:scale-[1.04] transition-transform duration-500" />
+        <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[12px] font-semibold shadow-sm animate-pop ${statusStyle[p.status]}`}>
           {p.status}
         </span>
       </div>
@@ -120,16 +140,16 @@ function PropertyCard({ property: p }: { property: typeof PROPERTIES[0] }) {
           </span>
         </div>
         <div className="flex gap-2 mt-3 pt-3 border-t border-[#F5F7FA]">
-          <button className="flex-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] transition-colors">
+          <button className="flex-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] active:scale-95 transition-all">
             Editar
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] transition-colors">
+          <button className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] active:scale-95 transition-all">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={1.5}>
               <path d="M6 1v6M3 4l3-3 3 3M2 9h8v2H2z" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Compartir
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] transition-colors">
+          <button className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium border border-[#E0E0E0] rounded-lg hover:border-[#1E88E5] hover:text-[#1E88E5] active:scale-95 transition-all">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={1.5}>
               <rect x="1" y="1" width="4" height="4" rx="0.5" /><rect x="7" y="1" width="4" height="4" rx="0.5" />
               <rect x="1" y="7" width="4" height="4" rx="0.5" /><rect x="7" y="7" width="4" height="4" rx="0.5" />

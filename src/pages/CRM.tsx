@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Reveal } from "../components/ui";
 
 type Lead = {
   id: number;
@@ -64,6 +65,16 @@ export default function CRM() {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
 
+  // Cerrar el modal con la tecla Escape
+  useEffect(() => {
+    if (!showNewLead) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowNewLead(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showNewLead]);
+
   const handleDragStart = (lead: Lead, colId: string) => {
     setDragging({ lead, fromCol: colId });
   };
@@ -92,14 +103,14 @@ export default function CRM() {
         </div>
         <button
           onClick={() => setShowNewLead(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#1E88E5] text-white text-[14px] font-medium rounded-lg hover:bg-[#1565C0] transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#1E88E5] text-white text-[14px] font-medium rounded-lg hover:bg-[#1565C0] hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
           + Nuevo Lead
         </button>
       </div>
 
       {/* Summary bar */}
-      <div className="flex items-center gap-4 flex-wrap mb-5 p-3 bg-white rounded-xl" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div className="flex items-center gap-4 flex-wrap mb-5 p-3 bg-white rounded-xl shadow-card">
         {COLUMNS.map((col) => (
           <div key={col.id} className="flex items-center gap-1.5 text-[13px]">
             <span className="w-3 h-3 rounded-sm" style={{ background: col.color }} />
@@ -111,36 +122,39 @@ export default function CRM() {
 
       {/* Kanban board */}
       <div className="flex gap-3 overflow-x-auto pb-2 flex-1">
-        {COLUMNS.map((col) => (
-          <div
-            key={col.id}
-            className={`shrink-0 w-52 flex flex-col rounded-xl transition-colors ${
-              dragOverCol === col.id ? "bg-[#E3F2FD]" : "bg-[#F5F7FA]"
-            }`}
-            onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
-            onDragLeave={() => setDragOverCol(null)}
-            onDrop={() => handleDrop(col.id)}
-          >
-            {/* Column header */}
-            <div className="flex items-center gap-2 p-3 pb-2">
-              <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: col.color }} />
-              <span className="text-[13px] font-semibold text-[#212121]">{col.label}</span>
-              <span className="ml-auto text-[11px] font-semibold text-white px-1.5 py-0.5 rounded-full" style={{ background: col.color }}>
-                {totalByCol[col.id] ?? 0}
-              </span>
-            </div>
+        {COLUMNS.map((col, idx) => (
+          <Reveal key={col.id} delay={idx * 60} className="shrink-0 w-52 h-full">
+            <div
+              className={`h-full flex flex-col rounded-xl border transition-colors duration-200 ${
+                dragOverCol === col.id
+                  ? "bg-[#E3F2FD] border-[#1E88E5] scale-[1.01]"
+                  : "bg-[#F5F7FA] border-transparent"
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
+              onDragLeave={() => setDragOverCol(null)}
+              onDrop={() => handleDrop(col.id)}
+            >
+              {/* Column header */}
+              <div className="flex items-center gap-2 p-3 pb-2">
+                <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: col.color }} />
+                <span className="text-[13px] font-semibold text-[#212121]">{col.label}</span>
+                <span className="ml-auto text-[11px] font-semibold text-white px-1.5 py-0.5 rounded-full transition-transform" style={{ background: col.color }}>
+                  {totalByCol[col.id] ?? 0}
+                </span>
+              </div>
 
-            {/* Cards */}
-            <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-2 max-h-[calc(100vh-320px)]">
-              {(leads[col.id] ?? []).map((lead) => (
-                <LeadCard
-                  key={lead.id}
-                  lead={lead}
-                  onDragStart={() => handleDragStart(lead, col.id)}
-                />
-              ))}
+              {/* Cards */}
+              <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-2 max-h-[calc(100vh-320px)]">
+                {(leads[col.id] ?? []).map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
+                    onDragStart={() => handleDragStart(lead, col.id)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
 
@@ -163,12 +177,11 @@ function LeadCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => void }
     <div
       draggable
       onDragStart={onDragStart}
-      className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+      className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing shadow-card hover:shadow-elevated hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 animate-scale-in"
     >
       <div className="flex items-start justify-between mb-2">
         <div className="w-8 h-8 rounded-full bg-[#BBDEFB] flex items-center justify-center text-[11px] font-semibold text-[#1565C0] shrink-0 overflow-hidden">
-          <img src={lead.img} alt={lead.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <img src={lead.img} alt={lead.name} loading="lazy" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
         </div>
         <span className="text-[10px] text-[#BDBDBD]">{lead.time}</span>
       </div>
@@ -203,8 +216,14 @@ function NewLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md" style={{ boxShadow: "0 20px 25px rgba(0,0,0,0.1)" }}>
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-modal animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-[18px] font-semibold text-[#212121] mb-4">Nuevo Lead</h3>
         <div className="space-y-3 mb-5">
           {[
@@ -218,17 +237,18 @@ function NewLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
                 type="text"
                 value={value}
                 onChange={(e) => setter(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 placeholder={placeholder}
-                className="w-full px-3 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] transition-colors"
+                className="w-full px-3 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] transition-all"
               />
             </div>
           ))}
         </div>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] transition-colors">
+          <button onClick={onClose} className="flex-1 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] active:scale-95 transition-all">
             Cancelar
           </button>
-          <button onClick={handleSubmit} className="flex-1 py-2.5 text-[14px] bg-[#1E88E5] text-white rounded-lg font-medium hover:bg-[#1565C0] transition-colors">
+          <button onClick={handleSubmit} className="flex-1 py-2.5 text-[14px] bg-[#1E88E5] text-white rounded-lg font-medium hover:bg-[#1565C0] hover:shadow-elevated active:scale-95 transition-all">
             Agregar Lead
           </button>
         </div>

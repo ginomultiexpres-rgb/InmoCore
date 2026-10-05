@@ -1,5 +1,5 @@
+import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router";
-import { useState } from "react";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: DashboardIcon },
@@ -11,9 +11,33 @@ const navItems = [
   { to: "/branding", label: "Configuración", icon: ConfigIcon },
 ];
 
+const NOTIFICATIONS = [
+  { id: 1, text: "Nuevo lead: María García (Miraflores)", time: "Hace 2 h", color: "#1E88E5" },
+  { id: 2, text: "Visita confirmada: Carlos R. — Casa La Molina", time: "Hace 4 h", color: "#4CAF50" },
+  { id: 3, text: "18 escaneos al QR de tu portafolio hoy", time: "Hoy", color: "#FF9800" },
+];
+
 export default function Layout() {
   const location = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar el panel de notificaciones al hacer clic fuera o con Escape
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [notifOpen]);
 
   return (
     <div className="flex h-full bg-[#F5F7FA]">
@@ -29,10 +53,10 @@ export default function Layout() {
               to={to}
               end={to === "/"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-[0.98] ${
                   isActive
-                    ? "bg-[#1E88E5] text-white"
-                    : "text-[#757575] hover:bg-[#F5F7FA] hover:text-[#212121]"
+                    ? "bg-gradient-to-r from-[#1E88E5] to-[#1976D2] text-white shadow-sm"
+                    : "text-[#757575] hover:bg-[#F5F7FA] hover:text-[#212121] hover:translate-x-0.5"
                 }`
               }
             >
@@ -45,10 +69,10 @@ export default function Layout() {
           <NavLink
             to="/qr"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-[0.98] ${
                 isActive
-                  ? "bg-[#1E88E5] text-white"
-                  : "text-[#757575] hover:bg-[#F5F7FA] hover:text-[#212121]"
+                  ? "bg-gradient-to-r from-[#1E88E5] to-[#1976D2] text-white shadow-sm"
+                  : "text-[#757575] hover:bg-[#F5F7FA] hover:text-[#212121] hover:translate-x-0.5"
               }`
             }
           >
@@ -63,25 +87,44 @@ export default function Layout() {
         {/* Topbar */}
         <header className="h-14 bg-white border-b border-[#E0E0E0] flex items-center px-6 gap-4 shrink-0">
           <div className="flex-1 max-w-md">
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDBDBD]" />
+            <div className="relative group">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDBDBD] group-focus-within:text-[#1E88E5] transition-colors" />
               <input
                 type="text"
                 placeholder="Buscar propiedades, leads..."
-                className="w-full pl-9 pr-4 py-2 text-[14px] bg-[#F5F7FA] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] transition-colors"
+                className="w-full pl-9 pr-4 py-2 text-[14px] bg-[#F5F7FA] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] focus:bg-white focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] transition-all"
               />
             </div>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 ml-auto relative" ref={notifRef}>
             <button
-              onClick={() => setNotifOpen(!notifOpen)}
-              className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#F5F7FA] transition-colors"
+              onClick={() => setNotifOpen((open) => !open)}
+              aria-expanded={notifOpen}
+              aria-label="Notificaciones"
+              className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#F5F7FA] active:scale-95 transition-all"
             >
               <BellIcon className="w-5 h-5 text-[#757575]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F44336] rounded-full" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F44336] rounded-full animate-pulse-dot" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#1E88E5] flex items-center justify-center text-white text-[12px] font-semibold">
+            {notifOpen && (
+              <div className="absolute top-11 right-14 w-80 bg-white rounded-xl border border-[#E0E0E0] shadow-modal p-2 z-50 animate-slide-down origin-top-right">
+                <p className="text-[13px] font-semibold text-[#212121] px-2 py-1.5">Notificaciones</p>
+                {NOTIFICATIONS.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-[#F5F7FA] transition-colors cursor-pointer"
+                  >
+                    <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: n.color }} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] text-[#212121] leading-snug">{n.text}</p>
+                      <p className="text-[11px] text-[#BDBDBD] mt-0.5">{n.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2 cursor-pointer group">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E88E5] to-[#1565C0] flex items-center justify-center text-white text-[12px] font-semibold ring-2 ring-transparent group-hover:ring-[#BBDEFB] transition-all">
                 JP
               </div>
               <span className="text-[14px] font-medium text-[#212121]">Juan Pérez</span>
@@ -89,9 +132,11 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Page content: la key fuerza remontar para animar la entrada en cada navegación */}
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <div key={location.pathname} className="page-enter h-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
