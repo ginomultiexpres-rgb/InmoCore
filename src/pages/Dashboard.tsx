@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { CountUp, Reveal } from "../components/ui";
 
 const visitData = [
   { day: "Lun", visits: 8 },
@@ -20,9 +21,9 @@ const leadStages = [
 ];
 
 const recentProperties = [
-  { name: "Depa Miraflores", address: "Miraflores, Lima", time: "11:20", views: "119" },
-  { name: "Casa San Isidro", address: "San Isidro, Lima", time: "11:05", views: "101" },
-  { name: "Local Barranco", address: "Barranco, Lima", time: "12:06", views: "121" },
+  { name: "Depa Miraflores", address: "Miraflores, Lima", time: "11:20", views: 119 },
+  { name: "Casa San Isidro", address: "San Isidro, Lima", time: "11:05", views: 101 },
+  { name: "Local Barranco", address: "Barranco, Lima", time: "12:06", views: 121 },
 ];
 
 const todayVisits = [
@@ -36,153 +37,153 @@ export default function Dashboard() {
     <div className="p-6 space-y-6 max-w-[1400px]">
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          icon={<BuildingKPIIcon />}
-          value="15/20"
-          label="Propiedades Activas"
-          trend="+2"
-        />
-        <KPICard
-          icon={<EyeIcon />}
-          value="45"
-          label="Visitas Hoy"
-          trend="+8"
-        />
-        <KPICard
-          icon={<WAIcon />}
-          value="12"
-          label="WhatsApps"
-          trend="+3"
-          iconBg="#25D366"
-        />
-        <KPICard
-          icon={<CalendarKPIIcon />}
-          value="3"
-          label="Visitas Agendadas"
-          trend="+1"
-        />
+        <Reveal delay={0}>
+          <KPICard icon={<BuildingKPIIcon />} value={15} suffix="/20" label="Propiedades Activas" trend="+2" />
+        </Reveal>
+        <Reveal delay={80}>
+          <KPICard icon={<EyeIcon />} value={45} label="Visitas Hoy" trend="+8" />
+        </Reveal>
+        <Reveal delay={160}>
+          <KPICard icon={<WAIcon />} value={12} label="WhatsApps" trend="+3" iconBg="#25D366" />
+        </Reveal>
+        <Reveal delay={240}>
+          <KPICard icon={<CalendarKPIIcon />} value={3} label="Visitas Agendadas" trend="+1" />
+        </Reveal>
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-[12px] p-5" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
-          <h3 className="text-[16px] font-semibold text-[#212121] mb-4">Visitas esta semana</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={visitData} barSize={28}>
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#757575" }} />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{ border: "none", borderRadius: 8, boxShadow: "0 4px 6px rgba(0,0,0,0.1)", fontSize: 12 }}
-                cursor={{ fill: "#F5F7FA" }}
-              />
-              <Bar dataKey="visits" radius={[4, 4, 0, 0]}>
-                {visitData.map((_, i) => (
-                  <Cell key={i} fill={i === 0 ? "#1E88E5" : "#BBDEFB"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white rounded-[12px] p-5" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
-          <h3 className="text-[16px] font-semibold text-[#212121] mb-4">Leads por etapa</h3>
-          <div className="flex flex-col items-center">
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie
-                  data={leadStages}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {leadStages.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
+        <Reveal delay={100} className="lg:col-span-2">
+          <div className="bg-white rounded-[12px] p-5 h-full shadow-card hover:shadow-elevated transition-shadow duration-300">
+            <h3 className="text-[16px] font-semibold text-[#212121] mb-4">Visitas esta semana</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={visitData} barSize={28}>
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#757575" }} />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{ border: "none", borderRadius: 8, boxShadow: "0 4px 6px rgba(0,0,0,0.1)", fontSize: 12 }}
+                  cursor={{ fill: "#F5F7FA" }}
+                />
+                <Bar dataKey="visits" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={900}>
+                  {visitData.map((_, i) => (
+                    <Cell key={i} fill={i === 0 ? "#1E88E5" : "#BBDEFB"} />
                   ))}
-                </Pie>
-                <Tooltip contentStyle={{ border: "none", borderRadius: 8, fontSize: 12 }} />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 w-full">
-              {leadStages.map((s) => (
-                <div key={s.name} className="flex items-center gap-1.5 text-[11px] text-[#757575]">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                  {s.name}: {s.value}
-                </div>
-              ))}
+          </div>
+        </Reveal>
+
+        <Reveal delay={180}>
+          <div className="bg-white rounded-[12px] p-5 h-full shadow-card hover:shadow-elevated transition-shadow duration-300">
+            <h3 className="text-[16px] font-semibold text-[#212121] mb-4">Leads por etapa</h3>
+            <div className="flex flex-col items-center">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={leadStages}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={75}
+                    paddingAngle={2}
+                    dataKey="value"
+                    isAnimationActive
+                    animationDuration={900}
+                  >
+                    {leadStages.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ border: "none", borderRadius: 8, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 w-full">
+                {leadStages.map((s) => (
+                  <div key={s.name} className="flex items-center gap-1.5 text-[11px] text-[#757575]">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                    {s.name}: {s.value}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-[12px] p-5" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-[#FF9800]">⚡</span>
-            <h3 className="text-[16px] font-semibold text-[#212121]">Propiedades más vistas</h3>
+        <Reveal delay={120}>
+          <div className="bg-white rounded-[12px] p-5 h-full shadow-card hover:shadow-elevated transition-shadow duration-300">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[#FF9800]">⚡</span>
+              <h3 className="text-[16px] font-semibold text-[#212121]">Propiedades más vistas</h3>
+            </div>
+            <div className="space-y-3">
+              {recentProperties.map((p) => (
+                <div key={p.name} className="flex items-center gap-3 rounded-lg -mx-2 px-2 py-1 hover:bg-[#F5F7FA] transition-colors group cursor-pointer">
+                  <div className="w-10 h-10 rounded-lg bg-[#BBDEFB] shrink-0 overflow-hidden ring-0 ring-[#1E88E5]/30 group-hover:ring-4 transition-all duration-300">
+                    <img
+                      src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format"
+                      alt={p.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[#212121] truncate">{p.name}</p>
+                    <p className="text-[12px] text-[#757575] truncate">{p.address}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[12px] font-medium text-[#212121]">{p.time}</p>
+                    <p className="text-[11px] text-[#757575]"><CountUp value={p.views} /> visitas</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {recentProperties.map((p) => (
-              <div key={p.name} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#BBDEFB] shrink-0 overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format"
-                    alt={p.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[#212121] truncate">{p.name}</p>
-                  <p className="text-[12px] text-[#757575] truncate">{p.address}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[12px] font-medium text-[#212121]">{p.time}</p>
-                  <p className="text-[11px] text-[#757575]">{p.views} visitas</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </Reveal>
 
-        <div className="bg-white rounded-[12px] p-5" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-[#1E88E5]">🗓</span>
-            <h3 className="text-[16px] font-semibold text-[#212121]">Visitas de hoy</h3>
+        <Reveal delay={200}>
+          <div className="bg-white rounded-[12px] p-5 h-full shadow-card hover:shadow-elevated transition-shadow duration-300">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[#1E88E5]">🗓</span>
+              <h3 className="text-[16px] font-semibold text-[#212121]">Visitas de hoy</h3>
+            </div>
+            <div className="space-y-3">
+              {todayVisits.map((v) => (
+                <div key={v.time} className="flex items-center gap-4 py-2 border-b border-[#F5F7FA] last:border-0 hover:bg-[#F5F7FA] rounded-lg transition-colors px-2 -mx-2">
+                  <span className="text-[13px] font-semibold text-[#1E88E5] w-12 shrink-0">{v.time}</span>
+                  <span className="text-[13px] text-[#212121]">{v.advisor}</span>
+                  <span className="text-[13px] text-[#757575] ml-auto">{v.client}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {todayVisits.map((v) => (
-              <div key={v.time} className="flex items-center gap-4 py-2 border-b border-[#F5F7FA] last:border-0">
-                <span className="text-[13px] font-semibold text-[#1E88E5] w-12 shrink-0">{v.time}</span>
-                <span className="text-[13px] text-[#212121]">{v.advisor}</span>
-                <span className="text-[13px] text-[#757575] ml-auto">{v.client}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </Reveal>
       </div>
     </div>
   );
 }
 
-function KPICard({ icon, value, label, trend, iconBg }: {
-  icon: React.ReactNode; value: string; label: string; trend: string; iconBg?: string;
+function KPICard({ icon, value, suffix = "", label, trend, iconBg }: {
+  icon: React.ReactNode; value: number; suffix?: string; label: string; trend: string; iconBg?: string;
 }) {
   return (
-    <div className="bg-white rounded-[12px] p-4 flex items-center gap-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)" }}>
+    <div className="bg-white rounded-[12px] p-4 flex items-center gap-4 h-full shadow-card hover:-translate-y-1 hover:shadow-elevated transition-all duration-300">
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
         style={{ background: iconBg ? `${iconBg}20` : "#E3F2FD" }}
       >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[22px] font-bold text-[#212121] leading-none">{value}</div>
+        <div className="text-[22px] font-bold text-[#212121] leading-none">
+          <CountUp value={value} suffix={suffix} />
+        </div>
         <div className="text-[12px] text-[#757575] mt-0.5">{label}</div>
       </div>
-      <div className="text-[11px] font-semibold text-[#4CAF50] flex items-center gap-0.5 shrink-0">
+      <div className="text-[11px] font-semibold text-[#4CAF50] flex items-center gap-0.5 shrink-0 animate-pop">
         <span>↗</span>{trend}
       </div>
     </div>
