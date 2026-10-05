@@ -70,11 +70,9 @@ export default function Agenda() {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={({ isActive }) =>
-                    `block w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
-                      isActive ? "bg-[#E3F2FD] text-[#1E88E5]" : "text-[#757575] hover:bg-[#F5F7FA] hover:translate-x-0.5"
-                    }`
-                  }
+                  className={`block w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 hover:translate-x-0.5 active:scale-[0.98] ${
+                    item.to === "/agenda" ? "bg-[#E3F2FD] text-[#1E88E5]" : "text-[#757575] hover:bg-[#F5F7FA]"
+                  }`}
                 >
                   {item.label}
                 </Link>
@@ -129,10 +127,13 @@ export default function Agenda() {
               </tbody>
             </table>
           </div>
-        </div></Reveal>
+        </div>
+        </div>
+      </Reveal>
 
-      {/* Right panel */}
-      <Reveal delay={120} className="w-64 shrink-0 space-y-4">
+      {/* Panel derecho: envoltorio con Reveal propio (animación de entrada) */}
+      <div className="w-64 shrink-0">
+      <Reveal delay={120} className="space-y-4">
         <div className="bg-white rounded-[12px] p-4 shadow-card hover:shadow-elevated transition-shadow duration-300">
           <h3 className="text-[14px] font-semibold text-[#212121] mb-3">Próximas Visitas</h3>
           <div className="space-y-3">
@@ -182,6 +183,7 @@ export default function Agenda() {
           <p className="text-[12px] text-[#757575]">Sáb: 10:00-14:00</p>
         </div>
       </Reveal>
+      </div>
 
       {/* Visit detail modal */}
       {selectedVisit && (
