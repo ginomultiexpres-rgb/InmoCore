@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Properties from "./pages/Properties";
@@ -10,7 +10,7 @@ import Branding from "./pages/Branding";
 import QRCodes from "./pages/QRCodes";
 import NewProperty from "./pages/NewProperty";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
     Component: Layout,

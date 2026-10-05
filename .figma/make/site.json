@@ -2,7 +2,7 @@
   "title": "SaaS-Inmobiliario",
   "description": "Provides a cohesive design system with color palettes, typography, and UI styles to streamline consistent branding and user interface development.",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,

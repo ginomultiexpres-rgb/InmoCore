@@ -1,20 +1,28 @@
+# Dependencias
 node_modules/
+
+# Artefactos de build (los genera el CI: pnpm build)
 dist/
-build/
-.cache/
-.env*
+dist-ssr/
+*.local
+
+# Historial local de Vite
 .vite/
-vite.config.*.timestamp-*
-*.tsbuildinfo
-*-debug.log*
+
+# Logs
 logs/
 *.log
-.claude-replay.*
-.tmp-*
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
-# Platform-managed agentplat state, not project source. In the
-# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
-# repo root IS the workspace root, so these land inside this repo rather than
-# beside it.
-/.plugins/
-/.opencode-skills/
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Editores / SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store

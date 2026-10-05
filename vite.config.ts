@@ -10,12 +10,31 @@ export default defineConfig(({ mode }) => {
   // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
   const emitSourcemaps = mode === 'development'
 
+  // Base URL para el despliegue en GitHub Pages.
+  // En local se usa "/". En CI, si el repositorio sigue la convención de
+  // Pages (el nombre coincide con el propietario, p. ej. "usuario.github.io"),
+  // el sitio se sirve en la raíz; en cualquier otro caso se sirve en
+  // "/<nombre-del-repo>/". También puede forzarse con PUBLIC_URL o
+  // FIGMA_PUBLIC_URL.
+  const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? ''
+  const ownerName = process.env.GITHUB_REPOSITORY?.split('/')[0] ?? ''
+  const isUserSite =
+    repositoryName.toLowerCase() === ownerName.toLowerCase() ||
+    repositoryName.toLowerCase() === `${ownerName.toLowerCase()}.github.io`
+  const basePath =
+    process.env.PUBLIC_URL ??
+    process.env.FIGMA_PUBLIC_URL ??
+    (repositoryName ? (isUserSite ? '/' : `/${repositoryName}/`) : '/')
+
   return {
-    base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
+    base: `${basePath.replace(/\/+$/, '')}/`,
     build: {
       sourcemap: emitSourcemaps ? 'inline' : false,
       minify: !emitSourcemaps,
     },
+    // public/404.html se copia a dist/ con la ruta base de GitHub Pages ya
+    // sustituida (la sustitución la realiza el workflow "Compilar" del CI).
+    publicDir: 'public',
     plugins: [
       react(),
       tailwindcss(),

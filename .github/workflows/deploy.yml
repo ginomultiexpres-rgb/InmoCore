@@ -1,0 +1,78 @@
+name: Desplegar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Compilar
+        # GITHUB_REPOSITORY ("usuario/repo") se usa en vite.config.ts para
+        # calcular `base` (p. ej. "/repo/") en sitios de proyecto de Pages.
+        run: pnpm build
+
+      - name: Sustituir la base en 404.html
+        # Aplica al redireccionador 404.html la misma base que usará Pages,
+        # calculada con la convención de GitHub (si el repo se llama como la
+        # organización/cuenta, el sitio queda en la raíz "/").
+        env:
+          OWNER_LOGIN: ${{ github.event.repository.owner.login }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          owner_lower="$(echo "$OWNER_LOGIN" | tr '[:upper:]' '[:lower:]')"
+          name_lower="$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')"
+          if [ "$owner_lower" = "$name_lower" ] || [ "$name_lower" = "${owner_lower}.github.io" ]; then
+            BASE="/"
+          else
+            BASE="/$name_lower/"
+          fi
+          echo "Base detectada: $BASE"
+          sed -i "s|__BASE_URL__|$BASE|g" dist/404.html
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4
