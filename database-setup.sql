@@ -17,12 +17,12 @@ CREATE TABLE IF NOT EXISTS properties (
     title TEXT NOT NULL,
     description TEXT,
     price NUMERIC NOT NULL,
-    currency TEXT DEFAULT 'USD',
+    currency TEXT DEFAULT 'PEN',
     address TEXT NOT NULL,
-    city TEXT NOT NULL,
-    state TEXT,
+    city TEXT NOT NULL DEFAULT 'Arequipa',
+    state TEXT DEFAULT 'Arequipa',
     zip_code TEXT,
-    country TEXT DEFAULT 'Mexico',
+    country TEXT DEFAULT 'Perú',
     property_type TEXT,
     bedrooms INTEGER,
     bathrooms INTEGER,
@@ -226,9 +226,31 @@ CREATE POLICY "Analítica: insertar" ON analytics FOR INSERT
     WITH CHECK (true);
 
 -- =============================================
--- DATOS DE EJEMPLO (opcional - eliminar en producción)
+-- DATOS DE DEMOSTRACIÓN — AREQUIPA, PERÚ (PEN)
 -- =============================================
 
--- INSERT INTO properties (title, description, price, address, city, property_type, bedrooms, bathrooms, area, image_url, status) VALUES
--- ('Casa Moderna en el Centro', 'Hermosa casa moderna con todas las amenidades', 2500000, 'Av. Principal 123', 'Ciudad', 'casa', 3, 2, 150, 'https://example.com/img1.jpg', 'available'),
--- ('Departamento de Lujo', 'Departamento con vista panorámica', 1800000, 'Calle Libertad 456', 'Ciudad', 'departamento', 2, 2, 95, 'https://example.com/img2.jpg', 'available');
+INSERT INTO properties (title, description, price, currency, address, city, state, country, property_type, bedrooms, bathrooms, area, price_per_sqm, status, featured, image_url, latitude, longitude) VALUES
+('Casa Colonial en Yanahuara', 'Casa de 3 dormitorios con jardín y vista al Misti, cerca del centro histórico.', 485000.00, 'PEN', 'Calle Yanahuara 302', 'Arequipa', 'Arequipa', 'Perú', 'casa', 3, 2, 180, 2694.44, 'available', true, 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800', -16.409047, -71.537451),
+('Departamento Moderno en Cayma', 'Departamento de lujo con terraza, piscina y gimnasio, ideal para jóvenes profesionales.', 620000.00, 'PEN', 'Av. Cayma 1450, Urb. San Gabriel', 'Arequipa', 'Arequipa', 'Perú', 'departamento', 2, 2, 95, 6526.32, 'available', true, 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=800', -16.385000, -71.539000),
+('Terreno en Sachaca', 'Terreno para construcción de vivienda unifamiliar, zona tranquila cerca de colegios.', 320000.00, 'PEN', 'Camino a Sachaca Km 3.5', 'Arequipa', 'Arequipa', 'Perú', 'terreno', 0, 0, 450, 711.11, 'available', false, 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800', -16.403000, -71.555000),
+('Casa en Vallecito', 'Casa familiar con 4 dormitorios, cochera para 2 autos y patio amplio.', 750000.00, 'PEN', 'Urb. Vallecito Mz. B Lote 12', 'Arequipa', 'Arequipa', 'Perú', 'casa', 4, 3, 220, 3409.09, 'available', false, 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800', -16.420000, -71.520000);
+
+INSERT INTO leads (name, email, phone, status, source, property_id, notes) VALUES
+('María Elena Vargas', 'maria.vargas@email.com', '+51 959 123 456', 'new', 'website', (SELECT id FROM properties WHERE title = 'Departamento Moderno en Cayma'), 'Interesada en departamento en Cayma, presupuesto hasta 650k PEN.'),
+('Carlos Rojas', 'carlos.rojas@email.com', '+51 954 789 012', 'new', 'website', (SELECT id FROM properties WHERE title = 'Casa Colonial en Yanahuara'), 'Busca casa en Yanahuara, prefiere zonas con historia.'),
+('Lucía Fernández', 'lucia.fernandez@email.com', '+51 987 654 321', 'contacted', 'referral', (SELECT id FROM properties WHERE title = 'Terreno en Sachaca'), 'Referida por cliente anterior. Quiere construir en zona tranquila.');
+
+INSERT INTO agenda_events (title, event_type, start_time, end_time, location, address, description, lead_id, property_id, status) VALUES
+('Visita Casa Yanahuara - María Vargas', 'visit', '2026-10-08 10:00:00-05', '2026-10-08 11:00:00-05', 'Casa Yanahuara', 'Calle Yanahuara 302, Arequipa', 'Visita con María Vargas para ver casa colonial.', (SELECT id FROM leads WHERE name = 'María Elena Vargas'), (SELECT id FROM properties WHERE title = 'Casa Colonial en Yanahuara'), 'scheduled'),
+('Visita Departamento Cayma - Carlos Rojas', 'visit', '2026-10-09 15:30:00-05', '2026-10-09 16:30:00-05', 'Departamento Cayma', 'Av. Cayma 1450, Urb. San Gabriel', 'Segunda visita con Carlos Rojas para ver departamento.', (SELECT id FROM leads WHERE name = 'Carlos Rojas'), (SELECT id FROM properties WHERE title = 'Departamento Moderno en Cayma'), 'scheduled');
+
+INSERT INTO property_inquiries (lead_id, property_id, message, status) VALUES
+((SELECT id FROM leads WHERE name = 'Lucía Fernández'), (SELECT id FROM properties WHERE title = 'Terreno en Sachaca'), 'Me gustaría saber si el terreno tiene acceso a servicios básicos (agua, luz, desagüe).', 'unread');
+
+INSERT INTO analytics (event_type, property_id, lead_id, metadata) VALUES
+('view', (SELECT id FROM properties WHERE title = 'Departamento Moderno en Cayma'), NULL, '{"source":"website","device":"mobile"}'),
+('view', (SELECT id FROM properties WHERE title = 'Casa Colonial en Yanahuara'), NULL, '{"source":"website","device":"desktop"}');
+
+INSERT INTO user_profiles (full_name, role, company, phone) VALUES
+('Juan Pérez Agente', 'agent', 'InmoCore Arequipa', '+51 954 321 098'),
+('Ana López Coordinadora', 'admin', 'InmoCore Arequipa', '+51 987 654 321');
