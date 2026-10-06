@@ -45,7 +45,7 @@ export const getProperties = async (): Promise<Property[]> => {
 }
 
 export const createProperty = async (property: Omit<Property, 'id' | 'created_at'>): Promise<Property> => {
-  const { data, error } = await supabase.from('properties').insert(payload).single()
+  const { data, error } = await supabase.from('properties').insert(property).single()
   if (error) throw new Error(`Crear propiedad: ${error.message}`)
   return data as Property
 }
@@ -58,7 +58,7 @@ export const getLeads = async (): Promise<Lead[]> => {
 }
 
 export const createLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<Lead> => {
-  const { data, error } = await supabase.from('leads').insert(payload).single()
+  const { data, error } = await supabase.from('leads').insert(lead).single()
   if (error) throw new Error(`Crear lead: ${error.message}`)
   return data as Lead
 }
@@ -71,7 +71,7 @@ export const getAgenda = async (): Promise<AgendaEvent[]> => {
 }
 
 export const createEvent = async (event: Omit<AgendaEvent, 'id' | 'created_at'>): Promise<AgendaEvent> => {
-  const { data, error } = await supabase.from('agenda_events').insert(payload).single()
+  const { data, error } = await supabase.from('agenda_events').insert(event).single()
   if (error) throw new Error(`Crear evento: ${error.message}`)
   return data as AgendaEvent
 }
