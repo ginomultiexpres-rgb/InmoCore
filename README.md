@@ -26,15 +26,14 @@ pnpm preview        # previsualiza el build de producción
 - **Ruta base**: `vite.config.ts` calcula `base` automáticamente a partir de la
   variable `GITHUB_REPOSITORY` que inyecta GitHub Actions (`/nombre-repo/`), por lo
   que los assets cargan correctamente desde la subruta de Pages. En local se usa `/`.
-  Puedes forzarla con `PUBLIC_URL` o `FIGMA_PUBLIC_URL`.
+  Puedes forzarla con la variable de entorno `PUBLIC_URL`.
 - **Enrutamiento**: la app usa `createHashRouter` (URLs tipo `#/crm`, `#/analytics`…),
   porque GitHub Pages es un hosting estático sin reescritura de URLs.
 - **Redirección 404**: `public/404.html` captura rutas "limpias" (p. ej. `/repo/crm`)
   y las reenvía al hash-router correspondiente. El workflow sustituye `__BASE_URL__`
   por la base real al publicar.
-- **Indexación**: `.figma/make/site.json` marca `robots.index: false`, así que el build
-  genera `robots.txt`/meta `noindex`. Si quieres que Google indexe el sitio, cambia
-  `"index": false` por `"index": true`.
+- **Indexación**: `public/robots.txt` permite el rastreo (`Allow: /`) y el HTML no
+  incluye meta `noindex`, por lo que el sitio puede indexarse en buscadores.
 
 ## Estructura
 
