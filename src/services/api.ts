@@ -2,7 +2,7 @@
  * Servicios API para InmoCore
  * Utiliza supabase.ts para comunicación REST
  */
-import { db } from "../lib/supabase.ts";
+import { db } from "../lib/supabase.js";
 
 export interface Property {
   id: string;

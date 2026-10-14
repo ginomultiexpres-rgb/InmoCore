@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from "../lib/supabase.ts";
+import { db } from "../lib/supabase.js";
 
 export default function Portfolio() {
   const [search, setSearch] = useState('');

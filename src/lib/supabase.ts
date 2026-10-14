@@ -5,8 +5,8 @@
 // https://vitejs.dev/guide/env.html#env-mode
 
 // Validate required environment variables
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? '';
-const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 if (!SUPABASE_URL || !ANON_KEY) {
   throw new Error('Faltan las variables VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Por favor configúralas en tu archivo .env.');
 }

@@ -1,6 +1,6 @@
 // Hook para manejar el estado de autenticación
 import { useState, useEffect } from 'react'
-import { supabase, getCurrentUser, getProfile } from "../lib/supabase-client.ts";
+import { supabase, getCurrentUser, getProfile } from "../lib/supabase-client.js";
 
 interface UserProfile {
   id: string
