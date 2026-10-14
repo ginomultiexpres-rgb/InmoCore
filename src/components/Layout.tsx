@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet, NavLink, useLocation } from "react-router";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { useAuth, ProtectedRoute } from "../hooks/useAuth.tsx";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: DashboardIcon },
@@ -19,6 +20,7 @@ const NOTIFICATIONS = [
 
 export default function Layout() {
   const location = useLocation();
+  const { user, loading } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +40,17 @@ export default function Layout() {
       document.removeEventListener("keydown", onKey);
     };
   }, [notifOpen]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1E88E5] mx-auto mb-4"></div>
+          <p className="text-[14px] text-[#757575]">Verificando acceso...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full bg-[#F5F7FA]">

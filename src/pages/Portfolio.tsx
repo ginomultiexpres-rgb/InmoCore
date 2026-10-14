@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../lib/supabase';
+import { db } from "../lib/supabase.ts";
 
 export default function Portfolio() {
   const [search, setSearch] = useState('');
@@ -11,24 +11,24 @@ export default function Portfolio() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const { data, error: fetchError } = await db.properties.select('*').execute();
-        if (fetchError) {
-          console.error('Error fetching properties:', fetchError);
-          setError(fetchError.message || 'Error al cargar propiedades');
-        } else {
-          setProperties(data || []);
+      const fetchProperties = async () => {
+        try {
+          const { data, error: fetchError } = await db.properties.select('*');
+          if (fetchError) {
+                    console.error('Error fetching properties:', fetchError);
+                    setError(String(fetchError.message || 'Error al cargar propiedades'));
+                  } else {
+                    setProperties(data || []);
+                  }
+        } catch (err) {
+          console.error('Fetch error:', err);
+          setError('Error de conexión');
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Fetch error:', err);
-        setError('Error de conexión');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperties();
-  }, []);
+      };
+      fetchProperties();
+    }, []);
 
   const filtered = properties.filter((p: any) =>
     p.name.toLowerCase().includes(search.toLowerCase())

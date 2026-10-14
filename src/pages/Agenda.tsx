@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { Reveal } from "../components/ui";
+import { Link } from "react-router-dom";
+import { Reveal } from "../components/ui.tsx";
 
 type Visit = {
   id: number;

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
+import { createProperty } from "../services/api.js";
 
 const STEPS = ["1. Fotos", "2. Datos", "3. Detalles", "4. Publicar"];
 
@@ -13,20 +14,63 @@ export default function NewProperty() {
   ]);
   const [data, setData] = useState({ title: "", price: "", type: "Departamento", operation: "Venta" });
   const [details, setDetails] = useState({ beds: "2", baths: "2", sqm: "85", description: "" });
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const uploadedCount = photos.filter(Boolean).length;
 
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    setPublishError(null);
+
+    try {
+      const firstPhoto = photos.find((p): p is string => p !== null) ||
+        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop&auto=format";
+
+      const priceNum = parseFloat(data.price.replace(/[S\\/,\\s]/g, "")) || 0;
+
+      const statusMap: Record<string, "available" | "pending" | "sold" | "rented"> = {
+        Venta: "available",
+        Renta: "rented"
+      };
+
+      const propertyData = {
+        title: data.title.trim(),
+        description: details.description.trim(),
+        price: priceNum,
+        address: "Dirección por definir",
+        city: "Lima",
+        state: "",
+        zip: "",
+        image_url: firstPhoto,
+        property_type: data.type.toLowerCase(),
+        bedrooms: parseInt(details.beds) || 0,
+        bathrooms: parseInt(details.baths) || 0,
+        area: parseInt(details.sqm) || 0,
+        status: statusMap[data.operation] || "available",
+        featured: false,
+        views_count: 0
+      };
+
+      await createProperty(propertyData);
+      navigate("/properties");
+    } catch (error) {
+      console.error("Error creating property:", error);
+      setPublishError(error instanceof Error ? error.message : "Error desconocido al crear la propiedad");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-[800px]">
-      {/* Breadcrumb */}
       <div className="text-[13px] text-[#757575] mb-4">
         <Link to="/properties" className="hover:text-[#1E88E5]">Mis Propiedades</Link>
         <span className="mx-2">›</span>
         <span className="text-[#212121] font-medium">Nueva</span>
       </div>
 
-      {/* Title + Stepper */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-[24px] font-semibold text-[#212121]">Nueva Propiedad</h1>
         <div className="flex items-center gap-2">
@@ -59,7 +103,12 @@ export default function NewProperty() {
         <Step3Details details={details} setDetails={setDetails} onBack={() => setStep(1)} onNext={() => setStep(3)} />
       )}
       {step === 3 && (
-        <Step4Publish onBack={() => setStep(2)} onPublish={() => navigate("/properties")} />
+        <Step4Publish
+          onBack={() => setStep(2)}
+          onPublish={handlePublish}
+          isPublishing={isPublishing}
+          error={publishError}
+        />
       )}
     </div>
   );
@@ -99,11 +148,9 @@ function Step1Photos({ photos, setPhotos, uploadedCount, onNext }: {
           <div key={i} className="relative aspect-video rounded-xl overflow-hidden border-2 border-dashed border-[#E0E0E0] bg-[#F5F7FA]">
             {photo ? (
               <>
-                <img src={photo} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                <img src={photo} alt={"Foto " + (i + 1)} className="w-full h-full object-cover" />
                 <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1">
-                  <span className="text-[12px] font-semibold text-[#212121]">
-                    {i === 0 ? "1 - Principal" : `${i + 1}`}
-                  </span>
+                  <span className="text-[12px] font-semibold text-[#212121]">{i === 0 ? "1 - Principal" : String(i + 1)}</span>
                 </div>
                 <button
                   onClick={() => removePhoto(i)}
@@ -135,20 +182,14 @@ function Step1Photos({ photos, setPhotos, uploadedCount, onNext }: {
           <span className="text-[#1E88E5] font-medium">{Math.round((uploadedCount / 4) * 100)}%</span>
         </div>
         <div className="h-2 bg-[#E0E0E0] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#1E88E5] rounded-full transition-all"
-            style={{ width: `${(uploadedCount / 4) * 100}%` }}
-          />
+          <div className="h-full bg-[#1E88E5] rounded-full transition-all" style={{ width: `${(uploadedCount / 4) * 100}%` }} />
         </div>
       </div>
       <div className="flex gap-3">
         <Link to="/properties" className="flex-1 py-3 text-center text-[14px] font-medium border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] transition-colors">
           Cancelar
         </Link>
-        <button
-          onClick={onNext}
-          className="flex-1 py-3 text-[14px] font-medium bg-[#1E88E5] text-white rounded-lg hover:bg-[#1565C0] transition-colors"
-        >
+        <button onClick={onNext} className="flex-1 py-3 text-[14px] font-medium bg-[#1E88E5] text-white rounded-lg hover:bg-[#1565C0] transition-colors">
           Siguiente →
         </button>
       </div>
@@ -271,10 +312,21 @@ function Step3Details({ details, setDetails, onBack, onNext }: {
   );
 }
 
-function Step4Publish({ onBack, onPublish }: { onBack: () => void; onPublish: () => void }) {
+function Step4Publish({ onBack, onPublish, isPublishing, error }: {
+  onBack: () => void;
+  onPublish: () => void;
+  isPublishing: boolean;
+  error: string | null;
+}) {
   return (
     <div>
       <h2 className="text-[20px] font-semibold text-[#212121] mb-6">Revisar y Publicar</h2>
+      {error && (
+        <div className="bg-[#FFEBEE] rounded-xl p-4 mb-5">
+          <p className="text-[14px] text-[#C62828] font-medium">Error al publicar:</p>
+          <p className="text-[13px] text-[#757575] mt-1">{error}</p>
+        </div>
+      )}
       <div className="bg-[#E8F5E9] rounded-xl p-5 mb-5 text-center">
         <div className="w-12 h-12 bg-[#4CAF50] rounded-full flex items-center justify-center mx-auto mb-3">
           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -294,8 +346,8 @@ function Step4Publish({ onBack, onPublish }: { onBack: () => void; onPublish: ()
           <div key={item.label} className="flex items-center justify-between py-2 border-b border-[#F5F7FA]">
             <span className="text-[13px] text-[#757575]">{item.label}</span>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] text-[#212121]">{item.value}</span>
-              <span className="text-[#4CAF50] text-[16px]">✓</span>
+              <span className="text-[13px] text-[#757575]">{item.value}</span>
+              <span className={item.ok ? "text-[#4CAF50] text-[16px]" : "text-[#F44336] text-[16px]"}>✓</span>
             </div>
           </div>
         ))}
@@ -304,8 +356,8 @@ function Step4Publish({ onBack, onPublish }: { onBack: () => void; onPublish: ()
         <button onClick={onBack} className="flex-1 py-3 text-[14px] font-medium border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] transition-colors">
           ← Atrás
         </button>
-        <button onClick={onPublish} className="flex-1 py-3 text-[14px] font-medium bg-[#4CAF50] text-white rounded-lg hover:bg-green-700 transition-colors">
-          Publicar Propiedad ✓
+        <button onClick={onPublish} disabled={isPublishing} className="flex-1 py-3 text-[14px] font-medium bg-[#4CAF50] text-white rounded-lg hover:bg-green-700 transition-colors">
+          {isPublishing ? "Publicando..." : "Publicar Propiedad ✓"}
         </button>
       </div>
     </div>

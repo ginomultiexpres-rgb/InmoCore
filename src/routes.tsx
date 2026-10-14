@@ -1,18 +1,12 @@
-import { createHashRouter } from "react-router";
-import Layout from "./components/Layout";
-import {
-  Dashboard,
-  Properties,
-  NewProperty,
-  Portfolio,
-  CRM,
-  Agenda,
-  Analytics,
-  Branding,
-  QRCodes,
-} from "./pages.lazy";
+import { createBrowserRouter } from "react-router-dom";
+import Layout from "./components/Layout.tsx";
+import { Dashboard, Properties, NewProperty, Portfolio, CRM, Agenda, Analytics, Branding, QRCodes } from "./pages.lazy.ts";
+import { lazy } from "react";
 
-export const router = createHashRouter([
+/* Lazy load Auth page */
+const Auth = lazy(() => import("./pages/Auth.tsx"));
+
+export const router = createBrowserRouter([
   {
     path: "/",
     Component: Layout,
@@ -27,5 +21,9 @@ export const router = createHashRouter([
       { path: "branding", Component: Branding },
       { path: "qr", Component: QRCodes },
     ],
+  },
+  {
+    path: "/auth",
+    Component: Auth,
   },
 ]);

@@ -1,16 +1,9 @@
+// Componente CRM - Pipeline de Ventas
 import { useEffect, useState } from "react";
-import { Reveal } from "../components/ui";
+import { Reveal } from "../components/ui.tsx";
+import { getLeads, createLead, Lead } from "../services/api.ts";
 
-type Lead = {
-  id: number;
-  name: string;
-  budget: string;
-  interest: string;
-  temp: "hot" | "warm" | "cold";
-  time: string;
-  avatar: string;
-  img: string;
-};
+// Tipo Lead está definido en src/services/api.ts
 
 type Column = {
   id: string;
@@ -20,38 +13,13 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { id: "nuevo", label: "Nuevo", color: "#1E88E5", count: 5 },
-  { id: "contactado", label: "Contactado", color: "#9C27B0", count: 3 },
-  { id: "visita", label: "Visita Agendada", color: "#FF9800", count: 4 },
-  { id: "negociacion", label: "Negociación", color: "#FFC107", count: 2 },
-  { id: "reservado", label: "Reservado", color: "#00BCD4", count: 1 },
-  { id: "cerrado", label: "Cerrado", color: "#4CAF50", count: 3 },
+  { id: "nuevo", label: "Nuevo", color: "#1E88E5", count: 0 },
+  { id: "contactado", label: "Contactado", color: "#9C27B0", count: 0 },
+  { id: "visita", label: "Visita Agendada", color: "#FF9800", count: 0 },
+  { id: "negociacion", label: "Negociación", color: "#FFC107", count: 0 },
+  { id: "reservado", label: "Reservado", color: "#00BCD4", count: 0 },
+  { id: "cerrado", label: "Cerrado", color: "#4CAF50", count: 0 },
 ];
-
-const INITIAL_LEADS: Record<string, Lead[]> = {
-  nuevo: [
-    { id: 1, name: "María García", budget: "S/ 900–1.3M", interest: "Departamento en Miraflores", temp: "hot", time: "Hace 2h", avatar: "MG", img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format" },
-    { id: 2, name: "Carlos Ruiz", budget: "S/ 600–800K", interest: "Depa en Surco", temp: "warm", time: "Hace 3h", avatar: "CR", img: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=80&h=80&fit=crop&auto=format" },
-    { id: 3, name: "Ana López", budget: "S/ 1.5–2M", interest: "Casa en La Molina", temp: "cold", time: "Hace 5h", avatar: "AL", img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=80&h=80&fit=crop&auto=format" },
-  ],
-  contactado: [
-    { id: 4, name: "Pedro Morales", budget: "S/ 900–1.3M", interest: "Local en Barranco", temp: "hot", time: "Hace 1h", avatar: "PM", img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format" },
-  ],
-  visita: [
-    { id: 5, name: "Laura Sánchez", budget: "S/ 2–2.5M", interest: "Casa en San Isidro", temp: "hot", time: "Hace 2h", avatar: "LS", img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=80&h=80&fit=crop&auto=format" },
-    { id: 6, name: "Roberto Silva", budget: "S/ 900–1.3M", interest: "Depa en Jesús María", temp: "warm", time: "Hace 4h", avatar: "RS", img: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=80&h=80&fit=crop&auto=format" },
-  ],
-  negociacion: [
-    { id: 7, name: "Elena Torres", budget: "S/ 1.5–2M", interest: "Depa en San Borja", temp: "hot", time: "Hace 6h", avatar: "ET", img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format" },
-  ],
-  reservado: [
-    { id: 8, name: "Miguel Castro", budget: "S/ 2.5–3.5M", interest: "Casa en La Molina", temp: "warm", time: "Hace 1d", avatar: "MC", img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=80&h=80&fit=crop&auto=format" },
-  ],
-  cerrado: [
-    { id: 9, name: "Sofía Vega", budget: "S/ 750K", interest: "Depa en Lince", temp: "hot", time: "Hace 2d", avatar: "SV", img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=80&h=80&fit=crop&auto=format" },
-    { id: 10, name: "Diego Reyes", budget: "S/ 1.8M", interest: "Casa en Surco", temp: "warm", time: "Hace 3d", avatar: "DR", img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format" },
-  ],
-};
 
 const tempColor: Record<string, string> = {
   hot: "#F44336",
@@ -60,10 +28,58 @@ const tempColor: Record<string, string> = {
 };
 
 export default function CRM() {
-  const [leads, setLeads] = useState(INITIAL_LEADS);
+  const [leads, setLeads] = useState<Record<string, Lead[]>>({
+    nuevo: [],
+    contactado: [],
+    visita: [],
+    negociacion: [],
+    reservado: [],
+    cerrado: [],
+  });
   const [dragging, setDragging] = useState<{ lead: Lead; fromCol: string } | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Cargar leads al iniciar
+  useEffect(() => {
+    const loadLeads = async () => {
+      try {
+        const data = await getLeads();
+        // Convertir array a Record<string, Lead[]>
+        const leadsRecord: Record<string, Lead[]> = {
+          nuevo: [],
+          contactado: [],
+          visita: [],
+          negociacion: [],
+          reservado: [],
+          cerrado: [],
+        };
+        // Agrupar leads por su estado (asumiendo que cada lead tiene una propiedad 'status')
+        data.forEach(lead => {
+          const status = lead.status as keyof Record<string, Lead[]> || 'nuevo';
+          if (!leadsRecord[status]) {
+            leadsRecord[status] = [];
+          }
+          leadsRecord[status].push(lead);
+        });
+        setLeads(leadsRecord);
+      } catch (error) {
+        console.error("Error cargando leads:", error);
+        // Si falla la API, usar datos iniciales vacíos
+        setLeads({
+          nuevo: [],
+          contactado: [],
+          visita: [],
+          negociacion: [],
+          reservado: [],
+          cerrado: [],
+        });
+      }
+    };
+    loadLeads();
+  }, []);
 
   // Cerrar el modal con la tecla Escape
   useEffect(() => {
@@ -93,6 +109,47 @@ export default function CRM() {
   const totalByCol = Object.fromEntries(
     Object.entries(leads).map(([k, v]) => [k, v.length])
   );
+
+  const handleAddLead = async (leadData: Omit<Lead, 'id' | 'created_at'>) => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const newLead = await createLead({
+        ...leadData,
+        temp: 'warm',
+        time: 'Ahora',
+        avatar: leadData.name.slice(0, 2).toUpperCase(),
+        img: `https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format`,
+      });
+
+      // Agregar al estado local después de guardar exitosamente
+      setLeads((prev) => ({
+        ...prev,
+        nuevo: [newLead, ...prev.nuevo],
+      }));
+    } catch (error) {
+      console.error("Error creating lead:", error);
+      setSaveError(error instanceof Error ? error.message : "Error desconocido al crear el lead");
+      // Aún agregamos al estado local para UI, pero marcado con error
+      setLeads((prev) => ({
+        ...prev,
+        nuevo: [
+          {
+            ...leadData,
+            id: Date.now().toString(),
+            temp: "hot" as const,
+            time: "Ahora",
+            avatar: leadData.name.slice(0, 2).toUpperCase(),
+            img: `https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format`,
+          } as Lead,
+          ...prev.nuevo,
+        ],
+      }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="p-6 flex flex-col h-full">
@@ -126,10 +183,10 @@ export default function CRM() {
           <Reveal key={col.id} delay={idx * 60} className="shrink-0 w-52 h-full">
             <div
               className={`h-full flex flex-col rounded-xl border transition-colors duration-200 ${
-                dragOverCol === col.id
-                  ? "bg-[#E3F2FD] border-[#1E88E5] scale-[1.01]"
-                  : "bg-[#F5F7FA] border-transparent"
-              }`}
+                              dragOverCol === col.id
+                                ? "bg-[#E3F2FD] border-[#1E88E5] scale-[1.01]"
+                                : "bg-[#F5F7FA] border-transparent"
+                            }`}
               onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
               onDragLeave={() => setDragOverCol(null)}
               onDrop={() => handleDrop(col.id)}
@@ -146,11 +203,26 @@ export default function CRM() {
               {/* Cards */}
               <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-2 max-h-[calc(100vh-320px)]">
                 {(leads[col.id] ?? []).map((lead) => (
-                  <LeadCard
+                  <div
                     key={lead.id}
-                    lead={lead}
+                    draggable
                     onDragStart={() => handleDragStart(lead, col.id)}
-                  />
+                    className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing shadow-card hover:shadow-elevated hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 animate-scale-in"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="w-8 h-8 rounded-full bg-[#BBDEFB] flex items-center justify-center text-[11px] font-semibold text-[#1565C0] shrink-0 overflow-hidden">
+                        <img src={lead.img} alt={lead.name} loading="lazy" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      </div>
+                      <span className="text-[10px] text-[#BDBDBD]">{lead.time}</span>
+                    </div>
+                    <p className="text-[13px] font-semibold text-[#212121] leading-tight">{lead.name}</p>
+                    <p className="text-[12px] text-[#757575] mt-0.5">{lead.budget}</p>
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tempColor[lead.temp] }} />
+                      <span className="text-[11px] text-[#757575]">{lead.temp}</span>
+                    </div>
+                    <p className="text-[11px] text-[#BDBDBD] mt-1 truncate">{lead.interest}</p>
+                  </div>
                 ))}
               </div>
             </div>
@@ -160,99 +232,55 @@ export default function CRM() {
 
       {/* New Lead Modal */}
       {showNewLead && (
-        <NewLeadModal
-          onClose={() => setShowNewLead(false)}
-          onAdd={(lead) => {
-            setLeads((prev) => ({ ...prev, nuevo: [lead, ...prev.nuevo] }));
-            setShowNewLead(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function LeadCard({ lead, onDragStart }: { lead: Lead; onDragStart: () => void }) {
-  return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing shadow-card hover:shadow-elevated hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 animate-scale-in"
-    >
-      <div className="flex items-start justify-between mb-2">
-        <div className="w-8 h-8 rounded-full bg-[#BBDEFB] flex items-center justify-center text-[11px] font-semibold text-[#1565C0] shrink-0 overflow-hidden">
-          <img src={lead.img} alt={lead.name} loading="lazy" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-        </div>
-        <span className="text-[10px] text-[#BDBDBD]">{lead.time}</span>
-      </div>
-      <p className="text-[13px] font-semibold text-[#212121] leading-tight">{lead.name}</p>
-      <p className="text-[12px] text-[#757575] mt-0.5">{lead.budget}</p>
-      <div className="flex items-center gap-1 mt-1.5">
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tempColor[lead.temp] }} />
-        <span className="text-[11px] text-[#757575]">{lead.temp}</span>
-      </div>
-      <p className="text-[11px] text-[#BDBDBD] mt-1 truncate">{lead.interest}</p>
-    </div>
-  );
-}
-
-function NewLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: Lead) => void }) {
-  const [name, setName] = useState("");
-  const [budget, setBudget] = useState("");
-  const [interest, setInterest] = useState("");
-
-  const handleSubmit = () => {
-    if (!name.trim()) return;
-    onAdd({
-      id: Date.now(),
-      name,
-      budget,
-      interest,
-      temp: "warm",
-      time: "Ahora",
-      avatar: name.slice(0, 2).toUpperCase(),
-      img: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format",
-    });
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-modal animate-scale-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-[18px] font-semibold text-[#212121] mb-4">Nuevo Lead</h3>
-        <div className="space-y-3 mb-5">
-          {[
-            { label: "Nombre", value: name, setter: setName, placeholder: "María García" },
-            { label: "Presupuesto", value: budget, setter: setBudget, placeholder: "S/ 900K–1.3M" },
-            { label: "Interés", value: interest, setter: setInterest, placeholder: "Departamento en Miraflores" },
-          ].map(({ label, value, setter, placeholder }) => (
-            <div key={label}>
-              <label className="block text-[13px] font-medium text-[#212121] mb-1">{label}</label>
-              <input
-                type="text"
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                placeholder={placeholder}
-                className="w-full px-3 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] transition-all"
-              />
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in"
+          onClick={() => setShowNewLead(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md shadow-modal animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-[18px] font-semibold text-[#212121] mb-4">Nuevo Lead</h3>
+            {isSaving && saveError ? (
+              <div className="bg-[#FFEBEE] rounded-xl p-3 mb-3">
+                <p className="text-[14px] text-[#C62828] font-medium">Error:</p>
+                <p className="text-[13px] text-[#757575]">{saveError}</p>
+              </div>
+            ) : null}
+            <div className="space-y-3 mb-5">
+              {[
+                { label: "Nombre", value: "", setter: (v: string) => {}, placeholder: "María García" },
+                { label: "Presupuesto", value: "", setter: (v: string) => {}, placeholder: "S/ 900K–1.3M" },
+                { label: "Interés", value: "", setter: (v: string) => {}, placeholder: "Departamento en Miraflores" },
+              ].map(({ label, value, setter, placeholder }) => (
+              <div key={label}>
+                <label className="block text-[13px] font-medium text-[#212121] mb-1">{label}</label>
+                <input
+                                  type="text"
+                                  value={value}
+                                  onChange={(e) => setter(e.currentTarget.value ?? '')}
+                                  onKeyDown={(e) => e.key === "Enter" && handleAddLead({ name: e.currentTarget.value } as Omit<Lead, 'id' | 'created_at'>)}
+                                  placeholder={placeholder}
+                                  className="w-full px-3 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg outline-none focus:border-[#1E88E5] focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] transition-all"
+                                />
+              </div>
+            ))}
             </div>
-          ))}
+            <div className="flex gap-3">
+              <button onClick={() => setShowNewLead(false)} className="flex-1 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] active:scale-95 transition-all">
+                Cancelar
+              </button>
+              <button
+                onClick={() => setShowNewLead(false)}
+                disabled={isSaving}
+                className={`flex-1 py-2.5 text-[14px] bg-[#1E88E5] text-white rounded-lg font-medium hover:bg-[#1565C0] hover:shadow-elevated active:scale-95 transition-all ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {isSaving ? "Guardando..." : "Agregar Lead"}
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 text-[14px] border border-[#E0E0E0] rounded-lg text-[#757575] hover:bg-[#F5F7FA] active:scale-95 transition-all">
-            Cancelar
-          </button>
-          <button onClick={handleSubmit} className="flex-1 py-2.5 text-[14px] bg-[#1E88E5] text-white rounded-lg font-medium hover:bg-[#1565C0] hover:shadow-elevated active:scale-95 transition-all">
-            Agregar Lead
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
