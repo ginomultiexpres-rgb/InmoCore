@@ -1,6 +1,7 @@
 // Hook para manejar el estado de autenticación
 import { useState, useEffect } from 'react'
-import { supabase, getCurrentUser, getProfile } from "../lib/supabase-client.js";
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { supabase, getCurrentUser, getProfile } from "../lib/supabase";
 
 interface UserProfile {
   id: string
@@ -98,13 +99,13 @@ export function useAuth() {
   return authState
 }
 
-// Componente para proteger rutas
-import { Navigate, useLocation } from 'react-router'
-import { ReactNode } from 'react'
-
-export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
-  const location = useLocation()
+/**
+ * Componente guarda: se usa como ruta padre sin path en el árbol de rutas.
+ * Redirige a /auth si no hay sesión y renderiza <Outlet/> si la hay.
+ */
+export function ProtectedRoute() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -114,12 +115,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
           <p className="text-[14px] text-[#757575]">Verificando acceso...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>
+  return <Outlet />;
 }

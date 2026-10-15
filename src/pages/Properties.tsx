@@ -1,8 +1,8 @@
-import { getProperties, Property, PropertyFilters, getPropertiesWithFilters } from '../services/api.ts';
+import { getProperties, Property, PropertyFilters, getPropertiesWithFilters } from '../services/api';
 import { PropertyFilters as PropertyFiltersComponent } from '../components/PropertyFilters.tsx';
 import { Reveal, ProgressBar } from '../components/ui.tsx';
 import { PropertyStats } from '../components/PropertyFilters.tsx';
-import { ProtectedRoute } from '../hooks/useAuth.tsx';
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 

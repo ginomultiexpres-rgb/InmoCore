@@ -1,7 +1,7 @@
 // Componente CRM - Pipeline de Ventas
 import { useEffect, useState } from "react";
 import { Reveal } from "../components/ui.tsx";
-import { getLeads, createLead, Lead } from "../services/api.ts";
+import { getLeads, createLead, Lead } from "../services/api";
 
 // Tipo Lead está definido en src/services/api.ts
 

@@ -1,6 +1,6 @@
 // Página de Login / Registro para InmoCore
 import { useState, useEffect } from 'react'
-import { signIn, signUp, getCurrentUser } from "../lib/supabase-client.js";
+import { signIn, signUp, getCurrentUser } from "../lib/supabase";
 import { useNavigate } from 'react-router'
 
 interface User {

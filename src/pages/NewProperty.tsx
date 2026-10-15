@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createProperty } from "../services/api.js";
+import { createProperty } from "../services/api";
+import { z } from "zod";
+
+/** Validación con Zod antes de publicar (requisitos mínimos del formulario). */
+const publishSchema = z.object({
+  title: z.string().trim().min(3, "El título debe tener al menos 3 caracteres"),
+  price: z.coerce
+    .number("El precio debe ser un número válido")
+    .positive("El precio debe ser mayor que 0"),
+  description: z.string().trim().min(10, "La descripción debe tener al menos 10 caracteres"),
+  type: z.string().min(2, "Selecciona un tipo de propiedad"),
+});
 
 const STEPS = ["1. Fotos", "2. Datos", "3. Detalles", "4. Publicar"];
 
@@ -30,15 +41,26 @@ export default function NewProperty() {
 
       const priceNum = parseFloat(data.price.replace(/[S\\/,\\s]/g, "")) || 0;
 
+      // Validación Zod: bloquea envíos inválidos antes de tocar la API
+      const parsed = publishSchema.safeParse({
+        title: data.title,
+        price: priceNum,
+        description: details.description,
+        type: data.type,
+      });
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues.map((i) => i.message).join(". "));
+      }
+
       const statusMap: Record<string, "available" | "pending" | "sold" | "rented"> = {
         Venta: "available",
         Renta: "rented"
       };
 
       const propertyData = {
-        title: data.title.trim(),
-        description: details.description.trim(),
-        price: priceNum,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        price: parsed.data.price,
         address: "Dirección por definir",
         city: "Lima",
         state: "",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { useAuth, ProtectedRoute } from "../hooks/useAuth.tsx";
+import { useAuth } from "../hooks/useAuth";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: DashboardIcon },
