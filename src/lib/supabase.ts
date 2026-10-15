@@ -10,30 +10,65 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Faltan las variables VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Configúralas en .env (local) o en los secrets del repo (CI).'
+/**
+ * Validación temprana de credenciales: si faltan o son placeholders, la app
+ * entra en "modo demo" (ver services/api.ts) en lugar de crashear con un
+ * error no capturado que deja la pantalla en blanco.
+ */
+const isJwtLike = (k: string) => k.startsWith('eyJ') && k.length > 40;
+export const hasValidSupabaseConfig =
+  !!supabaseUrl &&
+  !!supabaseAnonKey &&
+  /^https?:\/\//.test(supabaseUrl) &&
+  isJwtLike(supabaseAnonKey);
+
+if (!hasValidSupabaseConfig) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[InmoCore] Configuración de Supabase ausente o inválida (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). ' +
+      'La app funcionará en modo demo con datos locales. ' +
+      'Pega la anon key real en .env (local) o en los secrets del repo (CI): ' +
+      'Supabase Dashboard → Project Settings → API Keys → anon public.'
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  global: {
-    headers: { 'X-Client-Info': 'inmocore-app' },
-  },
-});
+// createClient lanza si el URL no es sintácticamente válido; se protege para
+// permitir el arranque en modo demo cuando .env está vacío o incompleto.
+export const supabase = (() => {
+  try {
+    return createClient(supabaseUrl ?? 'http://localhost:1', supabaseAnonKey ?? 'public-anon-key-placeholder', {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+      global: {
+        headers: { 'X-Client-Info': 'inmocore-app' },
+      },
+    });
+  } catch {
+    // URL sintácticamente inválido → cliente inerte; los servicios caerán a modo demo.
+    return createClient('http://localhost:1', 'public-anon-key-placeholder');
+  }
+})();
 
 /* ---------- Autenticación ---------- */
 
 export async function signIn(email: string, password: string) {
+  if (!hasValidSupabaseConfig) {
+    throw new Error(
+      'Supabase no está configurado. Añade la anon key real en .env (Settings → API Keys → anon public).'
+    );
+  }
   return supabase.auth.signInWithPassword({ email, password });
 }
 
 export async function signUp(email: string, password: string, fullName: string) {
+  if (!hasValidSupabaseConfig) {
+    throw new Error(
+      'Supabase no está configurado. Añade la anon key real en .env (Settings → API Keys → anon public).'
+    );
+  }
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (data.user && !error) {

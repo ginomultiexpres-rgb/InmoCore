@@ -1,12 +1,9 @@
 // Página de Login / Registro para InmoCore
 import { useState, useEffect } from 'react'
-import { signIn, signUp, getCurrentUser } from "../lib/supabase";
-import { useNavigate } from 'react-router'
-
-interface User {
-  id: string
-  email: string
-}
+import { signIn, signUp } from "../lib/supabase";
+import { IS_DEMO_MODE } from "../services/api";
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true)
@@ -17,15 +14,12 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState('')
   const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
 
-  // Verificar sesión existente
+  // Sesión ya activa (según el contexto global) → redirigir sin fetch extra.
   useEffect(() => {
-    getCurrentUser().then(async (user) => {
-      if (user) {
-        navigate('/')
-      }
-    })
-  }, [navigate])
+    if (!authLoading && user) navigate('/', { replace: true })
+  }, [authLoading, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,17 +27,27 @@ export default function Auth() {
     setError(null)
     setSuccess('')
 
+    // Bloqueo explícito cuando faltan credenciales de Supabase.
+    if (IS_DEMO_MODE) {
+      setLoading(false);
+      setError(
+        'La autenticación real requiere configurar Supabase: pega la anon key en .env (Dashboard → Settings → API Keys → anon public).'
+      );
+      return;
+    }
+
     try {
       if (isLogin) {
-        const { data, error: signInError } = await signIn(email, password)
+        const { error: signInError } = await signIn(email, password)
         if (signInError) throw signInError
         setSuccess('¡Bienvenido a InmoCore!')
-        setTimeout(() => navigate('/'), 1000)
+        // onAuthStateChange en AuthProvider navega solo; fallback por si acaso.
+        setTimeout(() => navigate('/', { replace: true }), 800)
       } else {
-        const { data, error: signUpError } = await signUp(email, password, fullName)
+        const { error: signUpError } = await signUp(email, password, fullName)
         if (signUpError) throw signUpError
         setSuccess('¡Cuenta creada con éxito! Verifica tu correo.')
-        setTimeout(() => navigate('/'), 1500)
+        setTimeout(() => navigate('/', { replace: true }), 1500)
       }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado. Inténtalo de nuevo.')

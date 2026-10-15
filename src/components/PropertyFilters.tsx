@@ -44,12 +44,12 @@ export function PropertyFiltersServer({
   onClear,
 }: {
   initialFilters: PropertyFilters;
+  /** El padre persiste filtros+paginación en la URL (deep-linking) y dispara la fetch. */
   onFilterChange: (filters: PropertyFilters, params: { limit: number; offset: number }) => void;
   onClear: () => void;
 }) {
   const [filters, setFilters] = useState<PropertyFilters>(initialFilters);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [search, setSearch] = useState(filters.search || "");
   const defaultLimit = 12;
   const [limit, setLimit] = useState(defaultLimit);
   const [offset, setOffset] = useState(0);
@@ -59,7 +59,7 @@ export function PropertyFiltersServer({
       onFilterChange(filters, { limit, offset });
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, filters, limit, offset, onFilterChange]);
+  }, [filters, limit, offset, onFilterChange]);
 
   const handleChange = (key: keyof PropertyFilters, value: string | number | boolean | undefined) => {
     if (value === "" || value === null || value === undefined || value === false) {
@@ -95,8 +95,8 @@ export function PropertyFiltersServer({
         <input
           type="text"
           placeholder="Buscar por dirección, título, código..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={filters.search ?? ""}
+          onChange={(e) => handleChange("search", e.target.value || undefined)}
           className="w-full pl-10 pr-4 py-3 text-[14px] bg-[#F5F7FA] border border-[#E0E0E0] rounded-xl outline-none focus:border-[#1E88E5] focus:bg-white focus:shadow-[0_0_0_3px_rgba(30,136,229,0.12)] transition-all"
         />
       </div>

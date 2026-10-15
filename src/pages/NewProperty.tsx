@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createProperty } from "../services/api";
-import { z } from "zod";
+import { propertySchema } from "../schemas/property";
 
-/** Validación con Zod antes de publicar (requisitos mínimos del formulario). */
-const publishSchema = z.object({
-  title: z.string().trim().min(3, "El título debe tener al menos 3 caracteres"),
-  price: z.coerce
-    .number("El precio debe ser un número válido")
-    .positive("El precio debe ser mayor que 0"),
-  description: z.string().trim().min(10, "La descripción debe tener al menos 10 caracteres"),
-  type: z.string().min(2, "Selecciona un tipo de propiedad"),
-});
+/**
+ * Validación con Zod antes de publicar. Se reutiliza el schema canónico de
+ * dominio (src/schemas/property.ts); los campos del wizard de 4 pasos se
+ * mapean a sus claves antes de validar (type -> property_type).
+ */
+const wizardKeys: Record<string, string> = { type: "property_type" };
+const validateWizard = (values: Record<string, unknown>) => {
+  const mapped = Object.fromEntries(
+    Object.entries(values).map(([k, v]) => [wizardKeys[k] ?? k, v])
+  );
+  // El wizard solo recopila estos campos; el resto usa defaults del schema.
+  return propertySchema.pick({ title: true, price: true, description: true, property_type: true }).safeParse(mapped);
+};
 
 const STEPS = ["1. Fotos", "2. Datos", "3. Detalles", "4. Publicar"];
 
@@ -42,7 +46,7 @@ export default function NewProperty() {
       const priceNum = parseFloat(data.price.replace(/[S\\/,\\s]/g, "")) || 0;
 
       // Validación Zod: bloquea envíos inválidos antes de tocar la API
-      const parsed = publishSchema.safeParse({
+      const parsed = validateWizard({
         title: data.title,
         price: priceNum,
         description: details.description,

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(() => {
   const basePath = '/InmoCore/';
@@ -9,6 +10,11 @@ export default defineConfig(() => {
       sourcemap: false,
       minify: true,
     },
-    plugins: [react()],
+    plugins: [tailwindcss(), react()],
+    test: {
+      environment: 'jsdom',
+      setupFiles: 'tests/setup.ts',
+      globals: true,
+    },
   };
 });

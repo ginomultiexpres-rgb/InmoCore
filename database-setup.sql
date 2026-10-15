@@ -173,30 +173,109 @@ ALTER TABLE property_inquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
+-- Helper: rol del usuario autenticado desde user_profiles
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS TEXT
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT role FROM user_profiles WHERE user_id = auth.uid()),
+    'none'
+  );
+$$;
+
+-- Helpers de espacio de trabajo (evitan duplicar predicates)
+CREATE OR REPLACE FUNCTION public.is_agent_or_admin()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE
+AS $$ SELECT public.current_user_role() IN ('agent', 'admin') $$;
+
+-- ---------- PROPIEDADES ----------
+DROP POLICY IF EXISTS "Propiedades: leer" ON properties;
+DROP POLICY IF EXISTS "Propiedades: insertar" ON properties;
+DROP POLICY IF EXISTS "Propiedades: actualizar" ON properties;
+DROP POLICY IF EXISTS "Propiedades: eliminar" ON properties;
 DROP POLICY IF EXISTS "Propiedades públicas: leer" ON properties;
 DROP POLICY IF EXISTS "Propiedades públicas: insertar" ON properties;
-CREATE POLICY "Propiedades públicas: leer" ON properties FOR SELECT USING (true);
-CREATE POLICY "Propiedades públicas: insertar" ON properties FOR INSERT WITH CHECK (true);
 
+CREATE POLICY "Propiedades: leer" ON properties FOR SELECT
+  USING (auth.role() = 'authenticated');
+CREATE POLICY "Propiedades: insertar" ON properties FOR INSERT
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Propiedades: actualizar" ON properties FOR UPDATE
+  USING (public.is_agent_or_admin())
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Propiedades: eliminar" ON properties FOR DELETE
+  USING (public.current_user_role() = 'admin');
+
+-- ---------- LEADS (datos sensibles de clientes) ----------
 DROP POLICY IF EXISTS "Leads: leer" ON leads;
 DROP POLICY IF EXISTS "Leads: insertar" ON leads;
-CREATE POLICY "Leads: leer" ON leads FOR SELECT USING (true);
-CREATE POLICY "Leads: insertar" ON leads FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Leads: actualizar" ON leads;
+DROP POLICY IF EXISTS "Leads: eliminar" ON leads;
 
+CREATE POLICY "Leads: leer" ON leads FOR SELECT
+  USING (auth.role() = 'authenticated');
+CREATE POLICY "Leads: insertar" ON leads FOR INSERT
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Leads: actualizar" ON leads FOR UPDATE
+  USING (public.is_agent_or_admin())
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Leads: eliminar" ON leads FOR DELETE
+  USING (public.current_user_role() = 'admin');
+
+-- ---------- AGENDA ----------
 DROP POLICY IF EXISTS "Agenda: leer" ON agenda_events;
 DROP POLICY IF EXISTS "Agenda: insertar" ON agenda_events;
-CREATE POLICY "Agenda: leer" ON agenda_events FOR SELECT USING (true);
-CREATE POLICY "Agenda: insertar" ON agenda_events FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Agenda: actualizar" ON agenda_events;
+DROP POLICY IF EXISTS "Agenda: eliminar" ON agenda_events;
 
+CREATE POLICY "Agenda: leer" ON agenda_events FOR SELECT
+  USING (auth.role() = 'authenticated');
+CREATE POLICY "Agenda: insertar" ON agenda_events FOR INSERT
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Agenda: actualizar" ON agenda_events FOR UPDATE
+  USING (public.is_agent_or_admin())
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Agenda: eliminar" ON agenda_events FOR DELETE
+  USING (public.current_user_role() = 'admin');
+
+-- ---------- INCIDENCIAS ----------
 DROP POLICY IF EXISTS "Incidencias: leer" ON property_inquiries;
 DROP POLICY IF EXISTS "Incidencias: insertar" ON property_inquiries;
-CREATE POLICY "Incidencias: leer" ON property_inquiries FOR SELECT USING (true);
-CREATE POLICY "Incidencias: insertar" ON property_inquiries FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Incidencias: actualizar" ON property_inquiries;
 
+CREATE POLICY "Incidencias: leer" ON property_inquiries FOR SELECT
+  USING (auth.role() = 'authenticated');
+CREATE POLICY "Incidencias: insertar" ON property_inquiries FOR INSERT
+  WITH CHECK (public.is_agent_or_admin());
+CREATE POLICY "Incidencias: actualizar" ON property_inquiries FOR UPDATE
+  USING (public.is_agent_or_admin())
+  WITH CHECK (public.is_agent_or_admin());
+
+-- ---------- ANALÍTICA (solo lectura para agentes, escritura vía service role) ----------
 DROP POLICY IF EXISTS "Analítica: leer" ON analytics;
 DROP POLICY IF EXISTS "Analítica: insertar" ON analytics;
-CREATE POLICY "Analítica: leer" ON analytics FOR SELECT USING (true);
-CREATE POLICY "Analítica: insertar" ON analytics FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Analítica: leer" ON analytics FOR SELECT
+  USING (auth.role() = 'authenticated');
+-- Sin política de INSERT para el rol anon/authenticated: solo el backend
+-- (service_role, que bypasea RLS) o triggers internos pueden escribir.
+
+-- ---------- USER_PROFILES (cada usuario gestiona su perfil; admin todos) ----------
+DROP POLICY IF EXISTS "Perfiles: leer propios" ON user_profiles;
+DROP POLICY IF EXISTS "Perfiles: insertar propio" ON user_profiles;
+DROP POLICY IF EXISTS "Perfiles: actualizar propio" ON user_profiles;
+
+CREATE POLICY "Perfiles: leer propios" ON user_profiles FOR SELECT
+  USING (user_id = auth.uid() OR public.current_user_role() = 'admin');
+CREATE POLICY "Perfiles: insertar propio" ON user_profiles FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Perfiles: actualizar propio" ON user_profiles FOR UPDATE
+  USING (user_id = auth.uid() OR public.current_user_role() = 'admin')
+  WITH CHECK (user_id = auth.uid() OR public.current_user_role() = 'admin');
 
 -- =============================================
 -- UNIQUEDAD Y DEDUPLICACIÓN
