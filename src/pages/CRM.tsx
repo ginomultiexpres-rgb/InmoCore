@@ -1,7 +1,7 @@
 // Componente CRM - Pipeline de Ventas
 import { useEffect, useState } from "react";
 import { Reveal } from "../components/ui.tsx";
-import { getLeads, createLead, Lead } from "../services/api.ts";
+import { getLeads, createLead, Lead } from "../services/api";
 
 // Tipo Lead está definido en src/services/api.ts
 
@@ -114,19 +114,25 @@ export default function CRM() {
     setIsSaving(true);
     setSaveError(null);
 
+    // Campos de presentación solo locales (no son columnas de la tabla leads)
+    const uiExtras = {
+      time: 'Ahora',
+      avatar: leadData.name.slice(0, 2).toUpperCase(),
+      img: `https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format`,
+    };
+    const { name, email, phone, property_id, budget, interest, temp, status } = leadData;
+
     try {
-      const newLead = await createLead({
-        ...leadData,
+      const saved = await createLead({
+        name, email, phone, property_id, budget, interest,
         temp: 'warm',
-        time: 'Ahora',
-        avatar: leadData.name.slice(0, 2).toUpperCase(),
-        img: `https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format`,
+        status,
       });
 
       // Agregar al estado local después de guardar exitosamente
       setLeads((prev) => ({
         ...prev,
-        nuevo: [newLead, ...prev.nuevo],
+        nuevo: [{ ...saved, ...uiExtras }, ...prev.nuevo],
       }));
     } catch (error) {
       console.error("Error creating lead:", error);
@@ -139,10 +145,9 @@ export default function CRM() {
             ...leadData,
             id: Date.now().toString(),
             temp: "hot" as const,
-            time: "Ahora",
-            avatar: leadData.name.slice(0, 2).toUpperCase(),
-            img: `https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=80&h=80&fit=crop&auto=format`,
-          } as Lead,
+            created_at: new Date().toISOString(),
+            ...uiExtras,
+          },
           ...prev.nuevo,
         ],
       }));

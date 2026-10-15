@@ -1,143 +1,55 @@
 /// <reference types="vitest" />
-import { describe, it, expect } from 'vitest';
-import { getPropertiesWithFilters } from '../src/services/api';
+import { describe, it, expect, beforeEach } from 'vitest';
+import './mocks';
+import { getProperties, getPropertiesWithFilters } from '../src/services/api';
+import { lastQueryCalls, mockSupabase } from './mocks';
 
-describe('getPropertiesWithFilters', () => {
-  it('should handle undefined filters', () => {
-    const result = getPropertiesWithFilters(undefined);
-    expect(result).toBeDefined();
+describe('getProperties (filtros server-side)', () => {
+  beforeEach(() => {
+    lastQueryCalls.length = 0;
+    mockSupabase.from.mockClear();
   });
 
-  it('should handle null filters', () => {
-    const result = getPropertiesWithFilters(null);
-    expect(result).toBeDefined();
+  it('consulta la tabla properties con count exacto', async () => {
+    await getProperties();
+    expect(mockSupabase.from).toHaveBeenCalledWith('properties');
+    expect(lastQueryCalls.some((c) => c.startsWith('select'))).toBe(true);
+    expect(lastQueryCalls.some((c) => c.includes('"exact"'))).toBe(true);
   });
 
-  it('should apply city filter', async () => {
-    const filters = {
-      city: 'Lima',
-      property_type: undefined,
-      status: undefined,
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: undefined,
-      featured: undefined,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
+  it('aplica eq/gte/lte en el servidor según filtros', async () => {
+    await getProperties({ city: 'Lima', min_price: 50000, max_price: 1000000, status: 'available' });
+    expect(lastQueryCalls).toContain('eq("city","Lima")');
+    expect(lastQueryCalls).toContain('gte("price",50000)');
+    expect(lastQueryCalls).toContain('lte("price",1000000)');
+    expect(lastQueryCalls).toContain('eq("status","available")');
   });
 
-  it('should apply status filter', async () => {
-    const filters = {
-      city: undefined,
-      property_type: undefined,
-      status: 'Activa',
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: undefined,
-      featured: undefined,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
+  it('usa range() para paginación backend', async () => {
+    await getProperties({ page: 3, limit: 20 });
+    expect(lastQueryCalls).toContain('range(40,59)');
   });
 
-  it('should apply price filters', async () => {
-    const filters = {
-      city: undefined,
-      property_type: undefined,
-      status: undefined,
-      min_price: 50000,
-      max_price: 1000000,
-      min_bedrooms: undefined,
-      featured: undefined,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
+  it('construye or() para búsqueda de texto', async () => {
+    await getProperties({ search: 'departamento' });
+    const orCall = lastQueryCalls.find((c) => c.startsWith('or('));
+    expect(orCall).toBeDefined();
+    expect(orCall).toContain('title.ilike.*departamento*');
   });
 
-  it('should apply bedroom filters', async () => {
-    const filters = {
-      city: undefined,
-      property_type: undefined,
-      status: undefined,
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: 2,
-      featured: undefined,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
+  it('devuelve estructura PagedResult', async () => {
+    const result = await getProperties();
+    expect(result).toMatchObject({ data: [], total: 0, page: 1, pageSize: 20 });
+    expect(typeof result.hasMore).toBe('boolean');
   });
+});
 
-  it('should apply featured filter', async () => {
-    const filters = {
-      city: undefined,
-      property_type: undefined,
-      status: undefined,
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: undefined,
-      featured: true,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
-  });
-
-  it('should apply search filter', async () => {
-    const filters = {
-      city: undefined,
-      property_type: undefined,
-      status: undefined,
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: undefined,
-      featured: undefined,
-      search: 'miraflores',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
-  });
-
-  it('should handle empty results', async () => {
-    const filters = {
-      city: 'Ciudad Inexistente',
-      property_type: undefined,
-      status: undefined,
-      min_price: undefined,
-      max_price: undefined,
-      min_bedrooms: undefined,
-      featured: undefined,
-      search: '',
-      page: 1,
-      limit: 20,
-    };
-    
-    const result = await getPropertiesWithFilters(filters);
-    expect(result).toBeDefined();
-    // Should return empty array, not crash
-    expect(Array.isArray(result)).toBe(true);
+describe('getPropertiesWithFilters (compat query-string)', () => {
+  it('delega filtros al servidor desde un query string', async () => {
+    lastQueryCalls.length = 0;
+    await getPropertiesWithFilters('city=Lima&min_price=100&page=2');
+    expect(lastQueryCalls).toContain('eq("city","Lima")');
+    expect(lastQueryCalls).toContain('gte("price",100)');
+    expect(lastQueryCalls).toContain('range(20,39)');
   });
 });

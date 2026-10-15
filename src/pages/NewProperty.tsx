@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createProperty } from "../services/api.js";
+import { createProperty } from "../services/api";
+import { propertySchema } from "../schemas/property";
+
+/**
+ * Validación con Zod antes de publicar. Se reutiliza el schema canónico de
+ * dominio (src/schemas/property.ts); los campos del wizard de 4 pasos se
+ * mapean a sus claves antes de validar (type -> property_type).
+ */
+const wizardKeys: Record<string, string> = { type: "property_type" };
+const validateWizard = (values: Record<string, unknown>) => {
+  const mapped = Object.fromEntries(
+    Object.entries(values).map(([k, v]) => [wizardKeys[k] ?? k, v])
+  );
+  // El wizard solo recopila estos campos; el resto usa defaults del schema.
+  return propertySchema.pick({ title: true, price: true, description: true, property_type: true }).safeParse(mapped);
+};
 
 const STEPS = ["1. Fotos", "2. Datos", "3. Detalles", "4. Publicar"];
 
@@ -30,15 +45,26 @@ export default function NewProperty() {
 
       const priceNum = parseFloat(data.price.replace(/[S\\/,\\s]/g, "")) || 0;
 
+      // Validación Zod: bloquea envíos inválidos antes de tocar la API
+      const parsed = validateWizard({
+        title: data.title,
+        price: priceNum,
+        description: details.description,
+        type: data.type,
+      });
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues.map((i) => i.message).join(". "));
+      }
+
       const statusMap: Record<string, "available" | "pending" | "sold" | "rented"> = {
         Venta: "available",
         Renta: "rented"
       };
 
       const propertyData = {
-        title: data.title.trim(),
-        description: details.description.trim(),
-        price: priceNum,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        price: parsed.data.price,
         address: "Dirección por definir",
         city: "Lima",
         state: "",

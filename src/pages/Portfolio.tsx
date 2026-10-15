@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from "../lib/supabase.js";
+import { getProperties } from '../services/api';
 
 export default function Portfolio() {
   const [search, setSearch] = useState('');
@@ -13,13 +13,10 @@ export default function Portfolio() {
   useEffect(() => {
       const fetchProperties = async () => {
         try {
-          const { data, error: fetchError } = await db.properties.select('*');
-          if (fetchError) {
-                    console.error('Error fetching properties:', fetchError);
-                    setError(String(fetchError.message || 'Error al cargar propiedades'));
-                  } else {
-                    setProperties(data || []);
-                  }
+          const { data } = await getProperties({ limit: 100 });
+          if (data) {
+            setProperties(data);
+          }
         } catch (err) {
           console.error('Fetch error:', err);
           setError('Error de conexión');

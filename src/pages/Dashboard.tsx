@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer, PieChart, Pie } from "recharts";
 import { CountUp, Reveal } from "../components/ui.tsx";
+import { getProperties, getLeads, getAgenda, type Property, type Lead, type AgendaEvent } from "../services/api";
 
 const visitData = [
   { day: "Lun", visits: 8 },
@@ -11,43 +13,88 @@ const visitData = [
   { day: "Dom", visits: 10 },
 ];
 
-const leadStages = [
-  { name: "Nuevo", value: 5, color: "#1E88E5" },
-  { name: "Contactado", value: 3, color: "#9C27B0" },
-  { name: "Visita Agendada", value: 4, color: "#FF9800" },
-  { name: "Negociación", value: 2, color: "#FFC107" },
-  { name: "Reservado", value: 1, color: "#00BCD4" },
-  { name: "Cerrado", value: 3, color: "#4CAF50" },
-];
-
-const recentProperties = [
-  { name: "Depa Miraflores", address: "Miraflores, Lima", time: "11:20", views: 119 },
-  { name: "Casa San Isidro", address: "San Isidro, Lima", time: "11:05", views: 101 },
-  { name: "Local Barranco", address: "Barranco, Lima", time: "12:06", views: 121 },
-];
-
-const todayVisits = [
-  { time: "10:00", advisor: "Juan Pérez", client: "María García" },
-  { time: "12:30", advisor: "Juan Pérez", client: "Carlos R." },
-  { time: "16:00", advisor: "Juan Pérez", client: "Pedro M." },
+const LEAD_STAGE_META: { key: Lead["status"]; name: string; color: string }[] = [
+  { key: "new", name: "Nuevo", color: "#1E88E5" },
+  { key: "contacted", name: "Contactado", color: "#9C27B0" },
+  { key: "qualified", name: "Calificado", color: "#FF9800" },
+  { key: "closed", name: "Cerrado", color: "#4CAF50" },
 ];
 
 export default function Dashboard() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [events, setEvents] = useState<AgendaEvent[]>([]);
+  const [totalProps, setTotalProps] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Datos reales desde Supabase (filtros/paginación server-side).
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      getProperties({ limit: 100 }),
+      getLeads(),
+      getAgenda(),
+    ])
+      .then(([props, lds, evs]) => {
+        if (!alive) return;
+        setProperties(props.data);
+        setTotalProps(props.total);
+        setLeads(lds);
+        setEvents(evs);
+      })
+      .catch((e) => alive && setError(e instanceof Error ? e.message : 'Error al cargar datos'));
+    return () => { alive = false; };
+  }, []);
+
+  const activeCount = properties.filter((p) => p.status === "available").length;
+  const leadStages = LEAD_STAGE_META.map((m) => ({
+    name: m.name,
+    color: m.color,
+    value: leads.filter((l) => (l.status ?? "new") === m.key).length,
+  }));
+  const recentProperties = [...properties]
+    .sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))
+    .slice(0, 3)
+    .map((p) => ({
+      name: p.title,
+      address: `${p.address}, ${p.city}`,
+      time: new Date(p.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
+      views: p.views_count ?? 0,
+    }));
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayVisits = events
+    .filter((e) => e.start_time?.startsWith(todayKey))
+    .map((e) => ({
+      time: new Date(e.start_time).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
+      advisor: "Yo",
+      client: e.title,
+    }));
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-[#FFF3F0] border border-[#F44336]/30 rounded-xl p-4 text-[13px] text-[#B71C1C]">
+          No se pudieron cargar los datos: {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Reveal delay={0}>
-          <KPICard icon={<BuildingKPIIcon />} value={15} suffix="/20" label="Propiedades Activas" trend="+2" />
+          <KPICard icon={<BuildingKPIIcon />} value={activeCount} suffix={`/${totalProps}`} label="Propiedades Activas" trend="+2" />
         </Reveal>
         <Reveal delay={80}>
-          <KPICard icon={<EyeIcon />} value={45} label="Visitas Hoy" trend="+8" />
+          <KPICard icon={<EyeIcon />} value={properties.reduce((acc, p) => acc + (p.views_count ?? 0), 0)} label="Visitas totales" trend="+8" />
         </Reveal>
         <Reveal delay={160}>
-          <KPICard icon={<WAIcon />} value={12} label="WhatsApps" trend="+3" iconBg="#25D366" />
+          <KPICard icon={<WAIcon />} value={leads.length} label="Leads totales" trend="+3" iconBg="#25D366" />
         </Reveal>
         <Reveal delay={240}>
-          <KPICard icon={<CalendarKPIIcon />} value={3} label="Visitas Agendadas" trend="+1" />
+          <KPICard icon={<CalendarKPIIcon />} value={todayVisits.length} label="Visitas Hoy" trend="+1" />
         </Reveal>
       </div>
 
